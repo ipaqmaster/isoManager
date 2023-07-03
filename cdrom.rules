@@ -1,0 +1,2 @@
+#Detects new CDs and works with eject
+KERNEL=="sr*", ACTION=="change", RUN+="${scriptPath}"
