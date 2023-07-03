@@ -52,10 +52,10 @@ function deployFile {
     deploySum="$(sha1sum <<< "${sourceContent}" | cut -f1 -d' ')"
     if [[ "$fileSum" == "$deploySum" ]]
     then
-      #echo "${basename} already deployed."
+      #log "${basename} already deployed."
       return
     else
-      echo "${basename} checksum differs from repo. Updating."
+      log "${basename} checksum differs from repo. Updating."
     fi
   fi
 
@@ -75,7 +75,7 @@ function deployFile {
 
 if ! which automount >/dev/null 2>&1
 then
-  echo "Please install autofs before using this (automount)"
+  log "Please install autofs before using this (automount)"
   exit 1
 fi  
 
@@ -87,7 +87,7 @@ deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"
 
 if [ -z "${labelPaths}" ]
 then
-  echo "No labels detected. Attach an ISO or put a CD in!"
+  log "No labels detected. Attach an ISO or put a CD in!"
 fi
 
 # Update labels
