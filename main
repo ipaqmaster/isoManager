@@ -9,6 +9,17 @@ autoMasterDPath="$(find /etc -type d -name auto.master.d 2>/dev/null)"
 autofsConfigFile="${autoMasterDPath}/auto.${scriptDirName}"
 t="$(echo -ne '\t')"
 
+if [ "$EUID" -ne 0 ]
+then
+  if which sudo >/dev/null 2>&1
+  then
+    SUDO=sudo
+  else
+    echo "Warning: Not run as effective root but sudo not available."
+    exit
+  fi
+fi
+
 #  _____                 _   _
 # |  ___|   _ _ __   ___| |_(_) ___  _ __  ___
 # | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
@@ -50,8 +61,8 @@ function deployFile {
 
   tmpFilename=$(mktemp)
   echo "$sourceContent" > ${tmpFilename}
-  mkdir -p $dirname
-  mv -v ${tmpFilename} ${1}
+  $SUDO mkdir -p $dirname
+  $SUDO mv -v ${tmpFilename} ${1}
   [ -f ${tmpFilename} ] && rm ${tmpFilename}
 }
 
@@ -98,17 +109,17 @@ then
   SELinuxState=$(getenforce)
   if [[ "$SELinuxState" == "Enforcing" ]]
   then
-    restorecon -v ${autoMasterDPath}/isoManager.autofs
+    $SUDO restorecon -v ${autoMasterDPath}/isoManager.autofs
   fi
 fi
 
 # Manage autofs service
-mkdir -p ${mountBasedir}
+$SUDO mkdir -p ${mountBasedir}
 if systemctl is-active autofs --quiet
 then
   log "Reloading autofs..."
-  systemctl reload autofs && { log "Done." ;} || { log "Failed!" ;}
+  $SUDO systemctl reload autofs && { log "Done." ;} || { log "Failed!" ;}
 else
   log "autofs isn't running, enabling and starting it now..."
-  systemctl enable --now autofs && { log "Done." ;} || { log "Failed!" ;}
+  $SUDO systemctl enable --now autofs && { log "Done." ;} || { log "Failed!" ;}
 fi
