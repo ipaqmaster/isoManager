@@ -80,7 +80,7 @@ then
 fi  
 
 deployFile ${autoMasterDPath}/${scriptDirName}.autofs "/repo/ISOs ${autoMasterDPath}/auto.${scriptDirName} --timeout 60 --browse"
-deployFile ${autoMasterDPath}/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
+deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
 # Always remove the current file for rebuilding.
 [ -f ${autofsConfigFile} ] && $SUDO rm ${autofsConfigFile}
