@@ -70,19 +70,10 @@ fi
 deployFile ${autoMasterDPath}/${scriptDirName}.autofs "/repo/ISOs ${autoMasterDPath}/auto.${scriptDirName} --timeout 60 --browse"
 deployFile ${autoMasterDPath}/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
-# Backup if config file present
-if [ -f "${autofsConfigFile}" ]
-then
-  autofsConfigFileBak="${autofsConfigFile}.bak.$(date +%s)"
-  log "Backing up: ${autofsConfigFile} to ${autofsConfigFileBak}"
-  mv -v ${autofsConfigFile} ${autofsConfigFileBak}
-fi
-
 if [ -z "${labelPaths}" ]
 then
   echo "No labels detected. Attach an ISO or put a CD in!"
   echo -ne "" >> ${autofsConfigFile}
-  
 fi
 
 # Update labels
