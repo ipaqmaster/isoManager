@@ -1,5 +1,5 @@
 #!/bin/bash
-export PATH+=":/usr/bin"
+export PATH+=":/usr/bin:/usr/sbin"
 
 mountBasedir="/repo/ISOs"
 discDevices="$(find /dev -type b -regextype egrep -regex '/dev/(loop|sr)[0-9]+')"
