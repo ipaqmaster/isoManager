@@ -52,6 +52,7 @@ function deployFile {
   echo "$sourceContent" > ${tmpFilename}
   mkdir -p $dirname
   mv -v ${tmpFilename} ${1}
+  [ -f ${tmpFilename} ] && rm ${tmpFilename}
 }
 
 #  __  __       _
