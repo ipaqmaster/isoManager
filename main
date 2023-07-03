@@ -5,7 +5,7 @@ labelPaths="$(find /dev/disk/by-label -type l 2>/dev/null)"
 scriptName=$(readlink -f $0)
 scriptRoot=$(dirname $(readlink -f $0))
 scriptDirName=$(basename $scriptRoot)
-autoMasterDPath="$(find /etc -type d -name auto.master.d)"
+autoMasterDPath="$(find /etc -type d -name auto.master.d 2>/dev/null)"
 autofsConfigFile="${autoMasterDPath}/auto.${scriptDirName}"
 t="$(echo -ne '\t')"
 
