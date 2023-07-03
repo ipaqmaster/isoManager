@@ -60,14 +60,14 @@ function deployFile {
 # |_|  |_|\__,_|_|_| |_|
 #
 
-deployFile /etc/auto.master.d/${scriptDirName}.autofs "/repo/ISOs /etc/auto.master.d/auto.${scriptDirName} --timeout 60 --browse"
-deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
-
 if ! which automount >/dev/null 2>&1
 then
   echo "Please install autofs before using this (automount)"
   exit 1
 fi  
+
+deployFile /etc/auto.master.d/${scriptDirName}.autofs "/repo/ISOs /etc/auto.master.d/auto.${scriptDirName} --timeout 60 --browse"
+deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
 # Backup if config file present
 if [ -f "${autofsConfigFile}" ]
