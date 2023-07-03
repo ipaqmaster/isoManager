@@ -82,7 +82,7 @@ fi
 deployFile ${autoMasterDPath}/${scriptDirName}.autofs "/repo/ISOs ${autoMasterDPath}/auto.${scriptDirName} --timeout 60 --browse"
 deployFile ${autoMasterDPath}/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
-# Remove the current file before starting.
+# Always remove the current file for rebuilding.
 [ -f ${autofsConfigFile} ] && $SUDO rm ${autofsConfigFile}
 
 if [ -z "${labelPaths}" ]
@@ -100,7 +100,6 @@ do
     # Skip if not a CD or already mounted
   [[ "$labelLink" =~ ^/dev/sr[0-9]+$ ]]    || { log "Skipping $labelBasename,${t}not a CD" ; continue;}
   targetLine="\"${labelBasenameClean}\"${t}-fstype=iso9660,ro,nosuid,nodev${t}:\"${label}\""
-  grep -qs "${targetLine}" ${autofsConfigFile} && { log "Skipping $labelBasename,${t}already in ${autofsConfigFile}" ; continue;}
   log "Adding autofs entry for ${labelBasename}"
   echo "$targetLine" | $SUDO tee -a ${autofsConfigFile} >/dev/null
 done
