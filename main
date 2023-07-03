@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH+=":/usr/bin"
 
 mountBasedir="/repo/ISOs"
 discDevices="$(find /dev -type b -regextype egrep -regex '/dev/(loop|sr)[0-9]+')"
@@ -30,7 +31,7 @@ fi
 
 function log {
   echo "$@"
-  logger "$@"
+  $SUDO logger "$@"
 }
 
   # Deploys a file from the script root or from the second argument
@@ -81,7 +82,7 @@ then
 fi  
 
 deployFile ${autoMasterDPath}/${scriptDirName}.autofs "/repo/ISOs ${autoMasterDPath}/auto.${scriptDirName} --timeout 60 --browse"
-deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
+deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*|loop[0-9]\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
 # Always remove the current file for rebuilding.
 [ -f ${autofsConfigFile} ] && $SUDO rm ${autofsConfigFile}
@@ -119,7 +120,14 @@ do
   echo target is $targetLine
   log "Adding autofs entry for ${discLabel}"
   echo "$targetLine" | $SUDO tee -a ${autofsConfigFile} >/dev/null 
+  ((discDevicesAdded++))
 done
+
+if [ -z "${discDevicesAdded}" ]
+then
+  log "No disc devices added. Creating empty placeholder file."
+  echo -ne "" | $SUDO tee -a ${autofsConfigFile} >/dev/null
+fi
 
 # Repair SELinux security contexts
 if which getenforce > /dev/null 2>&1
