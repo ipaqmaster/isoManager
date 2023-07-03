@@ -1,0 +1,21 @@
+Improve script and add loop device support.
+
+Add loop device support - For now choosing to ignore partitions of loop
+devices in favour of the device itself.
+
+Improved ISO9660 detection while enumerating devices
+
+add namingScheme variable so something other than the LABEL can be used
+if desired.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Mon Jul 3 16:36:49 2023 +1000
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   main
+#
