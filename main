@@ -5,7 +5,8 @@ labelPaths="$(find /dev/disk/by-label -type l 2>/dev/null)"
 scriptName=$(readlink -f $0)
 scriptRoot=$(dirname $(readlink -f $0))
 scriptDirName=$(basename $scriptRoot)
-autofsConfigFile="/etc/auto.master.d/auto.${scriptDirName}"
+autoMasterDPath="$(find /etc -type d -name auto.master.d)"
+autofsConfigFile="${autoMasterDPath}/auto.${scriptDirName}"
 t="$(echo -ne '\t')"
 
 #  _____                 _   _
@@ -66,8 +67,8 @@ then
   exit 1
 fi  
 
-deployFile /etc/auto.master.d/${scriptDirName}.autofs "/repo/ISOs /etc/auto.master.d/auto.${scriptDirName} --timeout 60 --browse"
-deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
+deployFile ${autoMasterDPath}/${scriptDirName}.autofs "/repo/ISOs ${autoMasterDPath}/auto.${scriptDirName} --timeout 60 --browse"
+deployFile ${autoMasterDPath}/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
 
 # Backup if config file present
 if [ -f "${autofsConfigFile}" ]
@@ -105,7 +106,7 @@ then
   SELinuxState=$(getenforce)
   if [[ "$SELinuxState" == "Enforcing" ]]
   then
-    restorecon -v /etc/auto.master.d/isoManager.autofs
+    restorecon -v ${autoMasterDPath}/isoManager.autofs
   fi
 fi
 
