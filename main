@@ -1,12 +1,13 @@
 #!/bin/bash
 
 mountBasedir="/repo/ISOs"
-labelPaths="$(find /dev/disk/by-label -type l 2>/dev/null)"
+discDevices="$(find /dev -type b -regextype egrep -regex '/dev/(loop|sr)[0-9]+')"
 scriptName=$(readlink -f $0)
 scriptRoot=$(dirname $(readlink -f $0))
 scriptDirName=$(basename $scriptRoot)
 autoMasterDPath="$(find /etc -type d -name auto.master.d 2>/dev/null)"
 autofsConfigFile="${autoMasterDPath}/auto.${scriptDirName}"
+namingScheme="label"
 t="$(echo -ne '\t')"
 
 if [ "$EUID" -ne 0 ]
@@ -85,23 +86,39 @@ deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"
 # Always remove the current file for rebuilding.
 [ -f ${autofsConfigFile} ] && $SUDO rm ${autofsConfigFile}
 
-if [ -z "${labelPaths}" ]
+if [ -z "${discDevices}" ]
 then
-  log "No labels detected. Attach an ISO or put a CD in!"
+  log "No disc devices detected. Attach a physical or virtual CD drive!"
 fi
 
 # Update labels
-for label in ${labelPaths}
+for discDrive in ${discDevices}
 do
-  labelBasename="$(echo -e $(basename $label))"
-  labelBasenameClean="$(echo -ne ${labelBasename})"
-  labelLink="$(readlink -f $label)"
+  fileType=$($SUDO file -s ${discDrive}) ; fileTypeExit=$?
+  discLabel="$($SUDO lsblk -d -no ${namingScheme} ${discDrive})"
 
-    # Skip if not CD
-  [[ "$labelLink" =~ ^/dev/sr[0-9]+$ ]]    || { log "Skipping Non-CD: ${labelBasename}." ; continue;}
-  targetLine="\"${labelBasenameClean}\"${t}-fstype=iso9660,ro,nosuid,nodev${t}:\"${label}\""
-  log "Adding autofs entry for ${labelBasename}"
-  echo "$targetLine" | $SUDO tee -a ${autofsConfigFile} >/dev/null
+    # Check if match actually valid CD
+  case $fileType in
+    *"ISO 9660 CD-ROM"*)
+      : # Proceed
+    ;;
+    *": empty")
+      log "Skipping Empty loop: ${discDrive}"
+      continue
+    ;;
+    *"ERROR: cannot read"*"(Input/output error)")
+      log "Skipping empty drive: ${discDrive}"
+      continue
+    ;;
+    *)
+      log "Skipping unknown item: ${discDrive}"
+      continue
+    ;;
+  esac
+  targetLine="\"${discLabel}\"${t}-fstype=iso9660,ro,nosuid,nodev${t}:${discDrive}"
+  echo target is $targetLine
+  log "Adding autofs entry for ${discLabel}"
+  echo "$targetLine" | $SUDO tee -a ${autofsConfigFile} >/dev/null 
 done
 
 # Repair SELinux security contexts
