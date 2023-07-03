@@ -1,0 +1,121 @@
+#!/bin/bash
+
+mountBasedir="/repo/ISOs"
+labelPaths="$(find /dev/disk/by-label -type l 2>/dev/null)"
+scriptName=$(readlink -f $0)
+scriptRoot=$(dirname $(readlink -f $0))
+scriptDirName=$(basename $scriptRoot)
+autofsConfigFile="/etc/auto.master.d/auto.${scriptDirName}"
+t="$(echo -ne '\t')"
+
+#  _____                 _   _
+# |  ___|   _ _ __   ___| |_(_) ___  _ __  ___
+# | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+# |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
+# |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+#
+
+function log {
+  echo "$@"
+  logger "$@"
+}
+
+  # Deploys a file from the script root or from the second argument
+function deployFile {
+  basename=$(basename $1)
+  dirname=$(dirname $1)
+
+  [ -n "$1" ] || return 1
+
+  if [ -n "$2" ]
+  then
+    sourceContent="${2}"
+  else
+    sourceContent="$(cat ${scriptRoot}/${basename})"
+  fi
+
+  if [ -f "$1" ]
+  then
+    fileSum="$(sha1sum < ${1} | cut -f1 -d' ')"
+    deploySum="$(sha1sum <<< "${sourceContent}" | cut -f1 -d' ')"
+    if [[ "$fileSum" == "$deploySum" ]]
+    then
+      #echo "${basename} already deployed."
+      return
+    else
+      echo "${basename} checksum differs from repo. Updating."
+    fi
+  fi
+
+  tmpFilename=$(mktemp)
+  echo "$sourceContent" > ${tmpFilename}
+  mkdir -p $dirname
+  mv -v ${tmpFilename} ${1}
+}
+
+#  __  __       _
+# |  \/  | __ _(_)_ __
+# | |\/| |/ _` | | '_ \
+# | |  | | (_| | | | | |
+# |_|  |_|\__,_|_|_| |_|
+#
+
+deployFile /etc/auto.master.d/${scriptDirName}.autofs "/repo/ISOs /etc/auto.master.d/auto.${scriptDirName} --timeout 60 --browse"
+deployFile /etc/udev/rules.d/${scriptDirName}.rules "KERNEL==\"sr*\", ACTION==\"change\", RUN+=\"${scriptName}\""
+
+if ! which automount >/dev/null 2>&1
+then
+  echo "Please install autofs before using this (automount)"
+  exit 1
+fi  
+
+# Backup if config file present
+if [ -f "${autofsConfigFile}" ]
+then
+  autofsConfigFileBak="${autofsConfigFile}.bak.$(date +%s)"
+  log "Backing up: ${autofsConfigFile} to ${autofsConfigFileBak}"
+  mv -v ${autofsConfigFile} ${autofsConfigFileBak}
+fi
+
+if [ -z "${labelPaths}" ]
+then
+  echo "No labels detected. Attach an ISO or put a CD in!"
+  echo -ne "" >> ${autofsConfigFile}
+  
+fi
+
+# Update labels
+for label in ${labelPaths}
+do
+  labelBasename="$(echo -e $(basename $label))"
+  labelBasenameClean="$(echo -ne ${labelBasename})"
+  labelLink="$(readlink -f $label)"
+
+    # Skip if not a CD or already mounted
+  [[ "$labelLink" =~ ^/dev/sr[0-9]+$ ]]    || { log "Skipping $labelBasename,${t}not a CD" ; continue;}
+  targetLine="\"${labelBasenameClean}\"${t}-fstype=iso9660,ro,nosuid,nodev${t}:\"${label}\""
+  grep -qs "${targetLine}" ${autofsConfigFile} && { log "Skipping $labelBasename,${t}already in ${autofsConfigFile}" ; continue;}
+  log "Adding autofs entry for ${labelBasename}"
+  echo "$targetLine" >> ${autofsConfigFile}
+done
+
+# Repair SELinux security contexts
+if which getenforce > /dev/null 2>&1
+then
+  SELinuxState=$(getenforce)
+  if [[ "$SELinuxState" == "Enforcing" ]]
+  then
+    restorecon -v /etc/auto.master.d/isoManager.autofs
+  fi
+fi
+
+# Manage autofs service
+mkdir -p ${mountBasedir}
+if systemctl is-active autofs --quiet
+then
+  log "Reloading autofs..."
+  systemctl reload autofs && { log "Done." ;} || { log "Failed!" ;}
+else
+  log "autofs isn't running, enabling and starting it now..."
+  systemctl enable --now autofs && { log "Done." ;} || { log "Failed!" ;}
+fi
