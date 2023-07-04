@@ -35,6 +35,6 @@ I would expect this to also work on any physical servers with CD drives. This to
 
 ## Future plans
 
-1. I'll probably expand this to support loop devices in the near future so ISO's presented on a loop device (Sourced either locally or remotely) can also be managed by this script.
+1. Direct ISO directory support? Being able to point the script right at an ISO dir/mount and forget - would be nice. But monitoring for changes would require more than just udev event checks.
 
-2. An option to set the mount directory name from other attributes than LABEL as I'm sure there's ISOs out there who don't use the label and wouldn't work if this tried to mount them right now.
+2. cdrom eject & hypervisor cdrom-drive removal check to avoid fighting/locking conditions on active mounts.
